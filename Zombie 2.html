@@ -1,0 +1,1893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Zombie Crash - FD44 Sync Edition</title>
+
+  <!-- Firebase App SDK & Realtime Database SDK (Matching Platform) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #04091a;
+      --panel-bg: #091530;
+      --card-bg: #0b1a3d;
+      --card-border: #142a5a;
+      --cyan-neon: #00f0ff;
+      --green-glow: #1fe07e;
+      --green-dark: #129d55;
+      --amber: #f8a51d;
+      --purple: #7a4beb;
+      --blue-pill: #1f77d0;
+      --red-accent: #f43f5e;
+      --text-main: #f0f4ff;
+      --text-dim: #7792c5;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      background-color: #02050f;
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .app-viewport {
+      width: 100%;
+      max-width: 440px;
+      height: 100vh;
+      max-height: 940px;
+      background: radial-gradient(circle at 50% 10%, #0d1e47 0%, var(--bg-dark) 100%);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: none;
+      box-shadow: 0 0 50px rgba(0, 0, 0, 0.9);
+    }
+    .app-viewport::-webkit-scrollbar { display: none; }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      height: 52px;
+      background: rgba(4, 9, 26, 0.85);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      color: #9cb3db;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+    }
+
+    .virtual-balance-badge {
+      display: flex;
+      align-items: center;
+      background: #112247;
+      border: 1px solid #1f3d7d;
+      border-radius: 20px;
+      padding: 4px 14px;
+      gap: 8px;
+    }
+
+    .virtual-balance-badge span {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: #ffd700;
+    }
+
+    .history-ribbon-wrapper {
+      width: 100%;
+      background: #040c24;
+      padding: 8px 10px;
+      border-bottom: 1px solid #0f224a;
+      display: flex;
+      align-items: center;
+      position: relative;
+      z-index: 10;
+    }
+
+    .history-ribbon {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      white-space: nowrap;
+      width: 100%;
+      align-items: center;
+      padding: 2px 0;
+    }
+    .history-ribbon::-webkit-scrollbar { display: none; }
+
+    .history-pill {
+      font-size: 12px;
+      font-weight: 800;
+      padding: 6px 12px;
+      border-radius: 14px;
+      letter-spacing: 0.4px;
+      line-height: 1.1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+      animation: pillSlide 0.35s ease-out;
+      flex-shrink: 0;
+    }
+    @keyframes pillSlide {
+      from { transform: translateX(-15px) scale(0.85); opacity: 0; }
+      to { transform: translateX(0) scale(1); opacity: 1; }
+    }
+    .pill-blue { background: #162a5b; color: #4da9ff; border: 1px solid #20438e; }
+    .pill-purple { background: #2f1d6b; color: #b68aff; border: 1px solid #4a2fa3; }
+    .pill-cyan { background: #074766; color: #38e1ff; border: 1px solid #0c73a6; }
+    .pill-gold { background: #4a3605; color: #ffd644; border: 1px solid #916807; }
+
+    .scene-container {
+      position: relative;
+      width: calc(100% - 16px);
+      margin: 8px auto 0;
+      height: 270px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid #162f6b;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+      background: #040817;
+      flex-shrink: 0;
+    }
+
+    #gameCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .viewport-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 12px 14px;
+    }
+
+    .viewport-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .main-multiplier {
+      font-size: 46px;
+      font-weight: 900;
+      color: #d8f7ff;
+      text-shadow: 0 0 20px rgba(0, 229, 255, 0.75), 0 0 35px rgba(0, 160, 255, 0.4);
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+    .main-multiplier.crashed {
+      color: var(--red-accent) !important;
+      text-shadow: 0 0 25px rgba(244, 63, 94, 0.8) !important;
+    }
+
+    .multiplier-label {
+      font-size: 10px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: #6a95d4;
+      font-weight: 700;
+      margin-top: 3px;
+    }
+
+    .scene-controls-icons {
+      pointer-events: auto;
+      display: flex;
+      gap: 8px;
+    }
+
+    .glass-icon-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(10, 27, 68, 0.6);
+      border: 1px solid rgba(88, 142, 255, 0.3);
+      color: #79a6f2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+    }
+
+    .countdown-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(4, 10, 28, 0.45);
+      backdrop-filter: blur(1.5px);
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+    .countdown-overlay.hidden { opacity: 0; }
+
+    .countdown-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #6edaff;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .countdown-number {
+      font-size: 82px;
+      font-weight: 900;
+      color: #ffffff;
+      text-shadow: 0 0 25px #00f0ff, 0 0 50px #0088ff;
+      line-height: 1;
+    }
+
+    .countdown-number.pulse {
+      animation: countPulse 0.85s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes countPulse {
+      0% { transform: scale(0.6); opacity: 0.2; }
+      50% { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(1); opacity: 0.95; }
+    }
+
+    .countdown-progress-bar {
+      width: 140px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      margin-top: 12px;
+      overflow: hidden;
+    }
+
+    .countdown-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #00f0ff, #1fe07e);
+      transform-origin: left;
+      transition: transform 1s linear;
+    }
+
+    .control-deck {
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .bet-card {
+      background: linear-gradient(180deg, #0a1738 0%, #08122d 100%);
+      border: 1px solid #132a5a;
+      border-radius: 16px;
+      padding: 10px 12px;
+      position: relative;
+    }
+
+    .bet-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 12px;
+      color: #8daedc;
+      font-weight: 600;
+    }
+
+    .card-toggles {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .custom-check {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      font-size: 11px;
+      color: #9cbbe9;
+    }
+    .custom-check input[type="checkbox"] {
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid #234b8c;
+      border-radius: 4px;
+      background: #09132b;
+      position: relative;
+      cursor: pointer;
+      outline: none;
+    }
+    .custom-check input[type="checkbox"]:checked {
+      background: #00d2ff;
+      border-color: #00e1ff;
+    }
+    .custom-check input[type="checkbox"]:checked::after {
+      content: "✔";
+      position: absolute;
+      color: #040f28;
+      font-size: 11px;
+      font-weight: 900;
+      top: -1px;
+      left: 2px;
+    }
+
+    .auto-cash-pill {
+      background: #060f27;
+      border: 1px solid #1b3871;
+      border-radius: 8px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #e2edff;
+      cursor: pointer;
+    }
+
+    .bet-grid-row {
+      display: grid;
+      grid-template-columns: 1fr 125px;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .stepper-and-pills {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .stepper-box {
+      display: flex;
+      align-items: center;
+      background: #040b1e;
+      border: 1px solid #142a5a;
+      border-radius: 10px;
+      height: 38px;
+      overflow: hidden;
+      padding: 2px;
+    }
+
+    .step-btn {
+      width: 36px;
+      height: 100%;
+      background: #112856;
+      border: none;
+      color: #3fe3ff;
+      font-size: 18px;
+      font-weight: 800;
+      cursor: pointer;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .step-btn:active { background: #1c3b7a; }
+
+    .step-input {
+      flex: 1;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 800;
+      color: #fff;
+      background: transparent;
+      border: none;
+      outline: none;
+      width: 100%;
+    }
+
+    .quick-pills-row {
+      display: flex;
+      gap: 4px;
+    }
+
+    .quick-pill {
+      flex: 1;
+      background: #0d1e44;
+      border: 1px solid #18356f;
+      color: #8bb5ef;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 4px 0;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: center;
+    }
+    .quick-pill:active { background: #19408e; color: #fff; }
+
+    .action-btn-main {
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(180deg, #2ae78b 0%, #15b766 100%);
+      box-shadow: 0 4px 18px rgba(31, 224, 126, 0.45);
+      color: #032d16;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 4px 6px;
+      transition: transform 0.08s ease, filter 0.2s;
+    }
+    .action-btn-main:active { transform: scale(0.97); }
+
+    .action-btn-main.claiming {
+      background: linear-gradient(180deg, #ffc727 0%, #e08200 100%);
+      box-shadow: 0 4px 18px rgba(255, 170, 0, 0.45);
+      color: #3b2000;
+    }
+
+    .action-btn-main.cancel {
+      background: linear-gradient(180deg, #f43f5e 0%, #be123c 100%);
+      box-shadow: 0 4px 18px rgba(244, 63, 94, 0.45);
+      color: #ffffff;
+    }
+
+    .action-label-title {
+      font-size: 17px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      line-height: 1.1;
+    }
+
+    .action-label-sub {
+      font-size: 9.5px;
+      font-weight: 700;
+      opacity: 0.85;
+      margin-top: 2px;
+    }
+
+    .add-bet-toggle {
+      background: #091738;
+      border: 1px dashed #1c3d79;
+      color: #5d93e8;
+      padding: 7px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .tabs-section {
+      background: #060e24;
+      border-top: 1px solid #132752;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding-bottom: var(--safe-bottom);
+    }
+
+    .tab-headers {
+      display: flex;
+      border-bottom: 1px solid #12254d;
+      padding: 4px 8px 0;
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      color: #6f8ec2;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 10px 0;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .tab-btn.active { color: #ffffff; }
+    .tab-btn.active::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 15%;
+      right: 15%;
+      height: 3px;
+      background: #00d9ff;
+      border-radius: 3px 3px 0 0;
+      box-shadow: 0 0 8px #00d9ff;
+    }
+
+    .tab-content {
+      padding: 8px 12px;
+      overflow-y: auto;
+      flex: 1;
+      max-height: 220px;
+    }
+
+    .live-list-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 4px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 11.5px;
+      transition: background 0.3s ease;
+    }
+    .live-list-item.player-highlight {
+      background: rgba(0, 240, 255, 0.08);
+      border-radius: 6px;
+    }
+
+    .live-user {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #a3c2f0;
+      font-weight: 600;
+    }
+    .user-avatar {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #152d62;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 800;
+      color: #4dd2ff;
+    }
+    .rank-pill {
+      font-size: 10px;
+      font-weight: 900;
+      width: 18px;
+      color: #f8a51d;
+    }
+
+    .live-score {
+      font-weight: 800;
+      color: #fff;
+    }
+    .live-score.won { color: var(--green-glow); }
+    .live-score.out { color: #e1526d; }
+    
+    .disclaimer-tag {
+      text-align: center;
+      font-size: 9.5px;
+      color: #486596;
+      padding: 4px 0 8px;
+      letter-spacing: 0.3px;
+    }
+
+    .toast-alert {
+      position: absolute;
+      top: 55px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(90deg, #f43f5e, #be123c);
+      color: #ffffff;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 800;
+      box-shadow: 0 4px 20px rgba(244, 63, 94, 0.5);
+      z-index: 999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    .toast-alert.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(5px);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-viewport">
+    
+    <div class="toast-alert" id="toastAlert">Warning!</div>
+
+    <header class="top-bar">
+      <div class="virtual-balance-badge">
+        <span id="virtualBalanceDisplay">0.00 ৳</span>
+      </div>
+
+      <button class="icon-btn" id="bonusBtn" title="Bonus Box">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffbe3d" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M6 12h12"/></svg>
+      </button>
+    </header>
+
+    <div class="history-ribbon-wrapper">
+      <div class="history-ribbon" id="historyRibbon">
+        <span class="history-pill pill-blue">x1.53</span>
+        <span class="history-pill pill-gold">x9.20</span>
+        <span class="history-pill pill-cyan">x2.87</span>
+        <span class="history-pill pill-purple">x1.98</span>
+        <span class="history-pill pill-purple">x1.61</span>
+        <span class="history-pill pill-blue">x1.01</span>
+        <span class="history-pill pill-cyan">x3.45</span>
+        <span class="history-pill pill-gold">x14.80</span>
+      </div>
+    </div>
+
+    <div class="scene-container">
+      <canvas id="gameCanvas"></canvas>
+
+      <div class="viewport-overlay">
+        <div class="viewport-top-row">
+          <div>
+            <div class="main-multiplier" id="multiplierLabel">x1.00</div>
+            <div class="multiplier-label">Flight Multiplier</div>
+          </div>
+          <div class="scene-controls-icons">
+            <button class="glass-icon-btn" id="audioToggleBtn" title="Audio">
+              <svg id="audioIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+            </button>
+            <button class="glass-icon-btn" id="infoToggleBtn" title="Rules">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="countdown-overlay" id="countdownOverlay">
+        <span class="countdown-title">Zombie Launch In</span>
+        <div class="countdown-number" id="countdownNum">7</div>
+        <div class="countdown-progress-bar">
+          <div class="countdown-fill" id="countdownBarFill"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="control-deck">
+      <div class="bet-card" id="deckPanel1">
+        <div class="bet-card-header">
+          <div class="card-toggles">
+            <label class="custom-check">
+              <input type="checkbox" id="autoModeCheck1" />
+              <span>Autopilot</span>
+            </label>
+            <label class="custom-check">
+              <input type="checkbox" id="autoClaimCheck1" />
+              <span>Auto Target</span>
+            </label>
+          </div>
+          <span class="auto-cash-pill" id="targetScoreDisplay1">x2.00</span>
+        </div>
+
+        <div class="bet-grid-row">
+          <div class="stepper-and-pills">
+            <div class="stepper-box">
+              <button class="step-btn" id="p1StepMinus">-</button>
+              <input type="number" class="step-input" id="p1PointsVal" value="40" min="5" max="99999" />
+              <button class="step-btn" id="p1StepPlus">+</button>
+            </div>
+            <div class="quick-pills-row">
+              <span class="quick-pill" data-val="10">10</span>
+              <span class="quick-pill" data-val="50">50</span>
+              <span class="quick-pill" data-val="500">500</span>
+              <span class="quick-pill" data-val="5000">5K</span>
+            </div>
+          </div>
+
+          <button class="action-btn-main" id="p1ActionBtn">
+            <span class="action-label-title" id="p1ActionText">START</span>
+            <span class="action-label-sub" id="p1ActionSub">Bet on this round</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="bet-card" id="deckPanel2" style="display: none;">
+        <div class="bet-card-header">
+          <div class="card-toggles">
+            <label class="custom-check">
+              <input type="checkbox" id="autoModeCheck2" />
+              <span>Autopilot</span>
+            </label>
+            <label class="custom-check">
+              <input type="checkbox" id="autoClaimCheck2" />
+              <span>Auto Target</span>
+            </label>
+          </div>
+          <span class="auto-cash-pill" id="targetScoreDisplay2">x2.00</span>
+        </div>
+
+        <div class="bet-grid-row">
+          <div class="stepper-and-pills">
+            <div class="stepper-box">
+              <button class="step-btn" id="p2StepMinus">-</button>
+              <input type="number" class="step-input" id="p2PointsVal" value="40" min="5" max="99999" />
+              <button class="step-btn" id="p2StepPlus">+</button>
+            </div>
+            <div class="quick-pills-row">
+              <span class="quick-pill" data-val="10">10</span>
+              <span class="quick-pill" data-val="50">50</span>
+              <span class="quick-pill" data-val="500">500</span>
+              <span class="quick-pill" data-val="5000">5K</span>
+            </div>
+          </div>
+
+          <button class="action-btn-main" id="p2ActionBtn">
+            <span class="action-label-title" id="p2ActionText">START</span>
+            <span class="action-label-sub" id="p2ActionSub">Bet on this round</span>
+          </button>
+        </div>
+      </div>
+
+      <button class="add-bet-toggle" id="toggleSecondPanelBtn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span id="togglePanelText">Add Secondary Flight Slot</span>
+      </button>
+    </div>
+
+    <div class="tabs-section">
+      <div class="tab-headers">
+        <button class="tab-btn active" data-tab="tab-current">Current Round</button>
+        <button class="tab-btn" data-tab="tab-myruns">My Runs</button>
+        <button class="tab-btn" data-tab="tab-leaders">Top Highscores</button>
+      </div>
+
+      <div class="tab-content" id="tabContentArea"></div>
+      <div class="disclaimer-tag">100% Real-Time Synced with FD44 Platform</div>
+    </div>
+
+  </div>
+
+  <script>
+    /* =========================================================================
+       1. MATCHING FIREBASE REALTIME DATABASE SYNC
+       ========================================================================= */
+    const firebaseConfig = {
+      apiKey: "AIzaSyAzG6l80RC_DnwKk7KlvVod2YU8GIC2oio",
+      authDomain: "nskk-2ca2d.firebaseapp.com",
+      databaseURL: "https://nskk-2ca2d-default-rtdb.firebaseio.com",
+      projectId: "nskk-2ca2d",
+      storageBucket: "nskk-2ca2d.firebasestorage.app",
+      messagingSenderId: "629774743594",
+      appId: "1:629774743594:web:a1610ad2d204eb791deb53",
+      measurementId: "G-YDXWDVFPZ3"
+    };
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const database = firebase.database();
+    let activePhone = null;
+    let virtualBalance = 0.00;
+
+    /* 🚀 ১০০% লাইভ ব্যালেন্স সিঙ্ক (FD44 প্ল্যাটফর্মের সাথে ডিরেক্ট লিংক) */
+    function initUserDatabaseSync() {
+      const urlParams = new URLSearchParams(window.location.search);
+      let phoneFound = urlParams.get('phone') || urlParams.get('user') || urlParams.get('uid');
+
+      if (!phoneFound) {
+        try {
+          if (window.parent && window.parent.user && window.parent.user.phone) {
+            phoneFound = window.parent.user.phone;
+          }
+        } catch(e) {}
+      }
+
+      if (!phoneFound) {
+        try {
+          phoneFound = localStorage.getItem('bd99_user');
+        } catch(e) {}
+      }
+
+      if (phoneFound) {
+        bindUserAccount(phoneFound);
+      } else {
+        database.ref('users').limitToLast(1).once('value', (snap) => {
+          if (snap.exists()) {
+            const data = snap.val();
+            const lastPhone = Object.keys(data)[0];
+            if (lastPhone) bindUserAccount(lastPhone);
+          }
+        });
+      }
+    }
+
+    function bindUserAccount(phone) {
+      activePhone = phone;
+      try { localStorage.setItem('bd99_user', phone); } catch(e) {}
+
+      database.ref('users/' + phone + '/balance').on('value', (snapshot) => {
+        if (snapshot.exists() && snapshot.val() !== null) {
+          virtualBalance = parseFloat(snapshot.val()) || 0;
+          updateBalanceUI();
+
+          try {
+            if (window.parent && window.parent.document) {
+              window.parent.document.querySelectorAll('.userBalance').forEach(e => {
+                e.innerText = virtualBalance.toFixed(2);
+              });
+            }
+          } catch(e) {}
+        }
+      });
+    }
+
+    function deductRealBalance(amount) {
+      virtualBalance = parseFloat((virtualBalance - amount).toFixed(2));
+      updateBalanceUI();
+
+      if (activePhone) {
+        database.ref('users/' + activePhone + '/balance').transaction((curr) => {
+          let val = parseFloat(curr);
+          if (isNaN(val)) return 0;
+          return Math.max(0, parseFloat((val - amount).toFixed(2)));
+        });
+
+        database.ref('users/' + activePhone + '/wager_left').transaction((curr) => {
+          let left = parseFloat(curr || 0) - amount;
+          return left < 0 ? 0 : parseFloat(left.toFixed(2));
+        });
+      }
+
+      try {
+        if (window.parent && window.parent.document) {
+          window.parent.document.querySelectorAll('.userBalance').forEach(e => {
+            e.innerText = virtualBalance.toFixed(2);
+          });
+        }
+      } catch(e) {}
+    }
+
+    function addRealBalance(amount) {
+      if (amount <= 0) return;
+      virtualBalance = parseFloat((virtualBalance + amount).toFixed(2));
+      updateBalanceUI();
+
+      if (activePhone) {
+        database.ref('users/' + activePhone + '/balance').transaction((curr) => {
+          let val = parseFloat(curr || 0);
+          return parseFloat((val + amount).toFixed(2));
+        });
+      }
+
+      try {
+        if (window.parent && window.parent.document) {
+          window.parent.document.querySelectorAll('.userBalance').forEach(e => {
+            e.innerText = virtualBalance.toFixed(2);
+          });
+        }
+      } catch(e) {}
+    }
+
+    /* =========================================================================
+       AUDIO ENGINE
+       ========================================================================= */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+      }
+      beep(freq = 600, duration = 0.08, type = "sine") {
+        if (this.muted) return;
+        this.init();
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      }
+      tick() { this.beep(920, 0.04, "triangle"); }
+      jumpLaunch() {
+        if (this.muted) return;
+        this.init();
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = "sawtooth";
+          osc.frequency.setValueAtTime(160, this.ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(750, this.ctx.currentTime + 0.45);
+          gain.gain.setValueAtTime(0.22, this.ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.5);
+        } catch(e) {}
+      }
+      claim() {
+        if (this.muted) return;
+        this.init();
+        [523, 659, 783, 1046, 1318].forEach((f, i) => {
+          setTimeout(() => this.beep(f, 0.12, "sine"), i * 45);
+        });
+      }
+      crash() {
+        if (this.muted) return;
+        this.init();
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = "sawtooth";
+          osc.frequency.setValueAtTime(160, this.ctx.currentTime);
+          osc.frequency.linearRampToValueAtTime(25, this.ctx.currentTime + 0.6);
+          gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.6);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + 0.6);
+        } catch(e) {}
+      }
+      toggle() {
+        this.muted = !this.muted;
+        return this.muted;
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    const STATES = {
+      COUNTDOWN: "COUNTDOWN",
+      JUMPING: "JUMPING",
+      FLYING: "FLYING",
+      CRASHED: "CRASHED"
+    };
+
+    let gameState = STATES.COUNTDOWN;
+    let currentMultiplier = 1.00;
+    let crashPoint = 2.00;
+    let countdownRemaining = 7;
+    let countdownTimer = null;
+    let flightStartTime = 0;
+    let jumpStartTime = 0;
+
+    const playerSlots = [
+      { id: 1, points: 40, activeCurrentRound: false, queuedNextRound: false, claimed: false, claimMultiplier: 0, autoPilot: false, autoClaim: false, targetMultiplier: 2.00 },
+      { id: 2, points: 40, activeCurrentRound: false, queuedNextRound: false, claimed: false, claimMultiplier: 0, autoPilot: false, autoClaim: false, targetMultiplier: 2.00 }
+    ];
+
+    const mockNames = ["ShadowNinja", "VampHunter", "NeonRider", "CyberZombie", "TurboBlast", "ApexFlyer", "NightKing", "Vortex99"];
+    let currentRoundParticipants = [];
+    const myRunsLog = [];
+
+    function showToast(msg) {
+      const toast = document.getElementById("toastAlert");
+      toast.innerText = msg;
+      toast.classList.add("show");
+      setTimeout(() => {
+        toast.classList.remove("show");
+      }, 2000);
+    }
+
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let cw, ch;
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      cw = rect.width;
+      ch = rect.height;
+      canvas.width = cw * dpr;
+      canvas.height = ch * dpr;
+      ctx.resetTransform();
+      ctx.scale(dpr, dpr);
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    const particles = [];
+    class Particle {
+      constructor(x, y, vx, vy, color, size, maxLife) {
+        this.x = x; this.y = y; this.vx = vx; this.vy = vy;
+        this.color = color; this.size = size; this.life = 0; this.maxLife = maxLife;
+      }
+      update() {
+        this.x += this.vx; this.y += this.vy; this.life++;
+        this.size = Math.max(0, this.size * 0.94);
+      }
+      draw(c) {
+        const alpha = 1 - this.life / this.maxLife;
+        if (alpha <= 0) return;
+        c.save();
+        c.globalAlpha = alpha;
+        c.fillStyle = this.color;
+        c.beginPath();
+        c.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        c.fill();
+        c.restore();
+      }
+    }
+
+    const skyline = [];
+    function initSkyline() {
+      skyline.length = 0;
+      let curX = 0;
+      while (curX < 650) {
+        const w = 26 + Math.random() * 32;
+        const h = 45 + Math.random() * 70;
+        skyline.push({ x: curX, w: w, h: h, lit: Math.random() > 0.45 });
+        curX += w - 2;
+      }
+    }
+    initSkyline();
+
+    let sceneOffset = 0;
+    let capeWave = 0;
+    let zCurX = 65;
+    let zCurY = 200;
+    let zAngle = 0;
+
+    let eyeBlinkTimer = 0;
+    let isBlinking = false;
+    let handTwitchAngle = 0;
+
+    function drawScene(timestamp) {
+      ctx.clearRect(0, 0, cw, ch);
+
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, ch);
+      skyGrad.addColorStop(0, "#03081b");
+      skyGrad.addColorStop(0.65, "#0b1739");
+      skyGrad.addColorStop(0.85, "#30132b");
+      skyGrad.addColorStop(1, "#542127");
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, cw, ch);
+
+      ctx.save();
+      const beamGrad = ctx.createRadialGradient(cw * 0.85, ch * 0.35, 10, cw * 0.85, ch * 0.35, 130);
+      beamGrad.addColorStop(0, "rgba(80, 180, 255, 0.28)");
+      beamGrad.addColorStop(1, "rgba(80, 180, 255, 0)");
+      ctx.fillStyle = beamGrad;
+      ctx.beginPath();
+      ctx.arc(cw * 0.85, ch * 0.35, 130, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      const scrollSpeed = (gameState === STATES.FLYING) ? (2.0 + Math.min(6, currentMultiplier * 0.45)) : 0.3;
+      sceneOffset = (sceneOffset + scrollSpeed) % 400;
+
+      ctx.save();
+      ctx.translate(-sceneOffset, 0);
+      for (let pass = 0; pass < 3; pass++) {
+        const shift = pass * 400;
+        skyline.forEach(b => {
+          const bx = b.x + shift;
+          const by = ch - b.h;
+          ctx.fillStyle = "#050917";
+          ctx.fillRect(bx, by, b.w, b.h);
+          if (b.lit) {
+            ctx.fillStyle = "rgba(255, 187, 85, 0.4)";
+            ctx.fillRect(bx + 4, by + 12, 3, 4);
+            ctx.fillRect(bx + 11, by + 22, 3, 4);
+          }
+        });
+      }
+      ctx.restore();
+
+      const roofX = 0;
+      const roofY = ch - 48;
+      const roofW = 115;
+      const roofH = 48;
+
+      ctx.save();
+      const roofGrad = ctx.createLinearGradient(0, roofY, 0, ch);
+      roofGrad.addColorStop(0, "#132347");
+      roofGrad.addColorStop(1, "#070e1e");
+      ctx.fillStyle = roofGrad;
+      ctx.fillRect(roofX, roofY, roofW, roofH);
+      ctx.fillStyle = "#00f0ff";
+      ctx.fillRect(roofX, roofY, roofW, 2);
+      ctx.restore();
+
+      const fogGrad = ctx.createLinearGradient(0, ch - 40, 0, ch);
+      fogGrad.addColorStop(0, "rgba(224, 76, 52, 0)");
+      fogGrad.addColorStop(1, "rgba(224, 76, 52, 0.3)");
+      ctx.fillStyle = fogGrad;
+      ctx.fillRect(0, ch - 40, cw, 40);
+
+      eyeBlinkTimer++;
+      if (eyeBlinkTimer > 160) {
+        isBlinking = true;
+        if (eyeBlinkTimer > 172) {
+          isBlinking = false;
+          eyeBlinkTimer = 0;
+        }
+      }
+
+      handTwitchAngle = Math.sin(timestamp * 0.007) * 0.18 + Math.cos(timestamp * 0.015) * 0.08;
+
+      const targetFlightX = cw * 0.58;
+      const targetFlightY = ch * 0.48;
+
+      let targetX, targetY, targetAngle;
+
+      if (gameState === STATES.COUNTDOWN) {
+        targetX = 60;
+        targetY = roofY - 28;
+        targetAngle = 0;
+      } else if (gameState === STATES.JUMPING) {
+        const jumpProgress = Math.min(1, (performance.now() - jumpStartTime) / 460);
+        const arc = Math.sin(jumpProgress * Math.PI) * 65;
+        targetX = 60 + (targetFlightX - 60) * jumpProgress;
+        targetY = (roofY - 28) + (targetFlightY - (roofY - 28)) * jumpProgress - arc;
+        targetAngle = jumpProgress * 0.2;
+      } else if (gameState === STATES.FLYING) {
+        const hoverBob = Math.sin(timestamp * 0.005) * 6;
+        targetX = targetFlightX;
+        targetY = targetFlightY - Math.min(65, (currentMultiplier - 1) * 12) + hoverBob;
+        targetAngle = Math.sin(timestamp * 0.004) * 0.04 + 0.05;
+      } else {
+        targetX = zCurX;
+        targetY = zCurY + 7;
+        targetAngle = zAngle + 0.18;
+      }
+
+      const smoothFactor = (gameState === STATES.JUMPING) ? 0.22 : 0.09;
+      zCurX += (targetX - zCurX) * smoothFactor;
+      zCurY += (targetY - zCurY) * smoothFactor;
+      zAngle += (targetAngle - zAngle) * smoothFactor;
+
+      capeWave += (gameState === STATES.FLYING || gameState === STATES.JUMPING) ? 0.4 : 0.08;
+
+      if (gameState === STATES.FLYING || gameState === STATES.JUMPING) {
+        particles.push(new Particle(
+          zCurX - 48,
+          zCurY + 12 + (Math.random() * 6 - 3),
+          -(5 + Math.random() * 7),
+          (Math.random() - 0.5) * 1.8,
+          Math.random() > 0.45 ? "#00f0ff" : "#ff9d00",
+          Math.random() * 4.5 + 2,
+          24
+        ));
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].update();
+        particles[i].draw(ctx);
+        if (particles[i].life >= particles[i].maxLife) particles.splice(i, 1);
+      }
+
+      ctx.save();
+      ctx.translate(zCurX, zCurY);
+      ctx.rotate(zAngle);
+      ctx.scale(1.35, 1.35);
+
+      const isStanding = (gameState === STATES.COUNTDOWN);
+
+      ctx.save();
+      ctx.fillStyle = "#1e5ab3";
+      ctx.beginPath();
+      if (isStanding) {
+        const sway = Math.sin(capeWave) * 3;
+        ctx.moveTo(-10, -5);
+        ctx.quadraticCurveTo(-18, 10, -16 + sway, 28);
+        ctx.lineTo(-4, 28);
+        ctx.quadraticCurveTo(-4, 10, 0, 5);
+      } else {
+        const cr1 = Math.sin(capeWave) * 10;
+        const cr2 = Math.cos(capeWave * 1.2) * 14;
+        ctx.moveTo(-15, -4);
+        ctx.quadraticCurveTo(-45, -20 + cr1, -78, -5 + cr2);
+        ctx.lineTo(-72, 16 + cr1);
+        ctx.quadraticCurveTo(-35, 12, -8, 6);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      if (!isStanding) {
+        ctx.fillStyle = "#d93856";
+        ctx.roundRect(-30, 8, 20, 9, 3);
+        ctx.fill();
+        ctx.fillStyle = "#222c3c";
+        ctx.fillRect(-22, 7, 3, 11);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 5px Arial";
+        ctx.fillText("GUN", -28, 15);
+
+        ctx.fillStyle = "#1b2230";
+        ctx.beginPath();
+        ctx.moveTo(-30, 9);
+        ctx.lineTo(-35, 8);
+        ctx.lineTo(-35, 17);
+        ctx.lineTo(-30, 16);
+        ctx.closePath();
+        ctx.fill();
+
+        const flameBack = 18 + Math.random() * 14;
+        ctx.fillStyle = "#00f0ff";
+        ctx.beginPath();
+        ctx.moveTo(-35, 9);
+        ctx.lineTo(-35 - flameBack, 12.5);
+        ctx.lineTo(-35, 16);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.moveTo(-35, 10.5);
+        ctx.lineTo(-35 - flameBack * 0.55, 12.5);
+        ctx.lineTo(-35, 14.5);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      if (isStanding) {
+        ctx.fillStyle = "#1e2c45";
+        ctx.fillRect(-8, 12, 6, 16);
+        ctx.fillStyle = "#0b121f";
+        ctx.fillRect(-10, 26, 9, 4);
+
+        ctx.fillStyle = "#273b5c";
+        ctx.fillRect(0, 12, 6, 16);
+        ctx.fillStyle = "#0f172a";
+        ctx.fillRect(-1, 26, 9, 4);
+
+        ctx.fillStyle = "#48a35c";
+        ctx.fillRect(0, 22, 5, 3);
+      } else {
+        ctx.fillStyle = "#18243a";
+        ctx.beginPath();
+        ctx.moveTo(-14, 2);
+        ctx.lineTo(-36, 3);
+        ctx.lineTo(-35, 8);
+        ctx.lineTo(-12, 7);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#0a0e18";
+        ctx.fillRect(-42, 2, 8, 6);
+
+        ctx.fillStyle = "#243654";
+        ctx.beginPath();
+        ctx.moveTo(-12, 5);
+        ctx.lineTo(-34, 11);
+        ctx.lineTo(-33, 16);
+        ctx.lineTo(-10, 12);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#111827";
+        ctx.fillRect(-40, 11, 8, 6);
+
+        ctx.fillStyle = "#4ea35f";
+        ctx.fillRect(-24, 7, 4, 3);
+      }
+
+      const bodyGrad = ctx.createLinearGradient(-12, -8, 14, 14);
+      bodyGrad.addColorStop(0, "#48a85c");
+      bodyGrad.addColorStop(1, "#275e33");
+      ctx.fillStyle = bodyGrad;
+      ctx.beginPath();
+      ctx.ellipse(0, 2, 18, 13, isStanding ? -0.1 : 0.15, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#e2e8f0";
+      ctx.beginPath();
+      ctx.ellipse(-3, 3, 14, 10, isStanding ? -0.05 : 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#6b1426";
+      ctx.fillRect(-4, 3, 4, 4);
+
+      const headGrad = ctx.createRadialGradient(16, -11, 2, 16, -11, 16);
+      headGrad.addColorStop(0, "#73d987");
+      headGrad.addColorStop(1, "#367d45");
+      ctx.fillStyle = headGrad;
+      ctx.beginPath();
+      ctx.arc(16, -11, 15, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = "#1b4523";
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(8, -22); ctx.lineTo(19, -18);
+      ctx.moveTo(11, -22); ctx.lineTo(10, -18);
+      ctx.moveTo(15, -21); ctx.lineTo(14, -17);
+      ctx.stroke();
+
+      ctx.fillStyle = "#2d6739";
+      ctx.beginPath();
+      ctx.roundRect(14, -5, 14, 9, [2, 5, 5, 2]);
+      ctx.fill();
+
+      ctx.fillStyle = "#120306";
+      ctx.fillRect(16, -5, 11, 5);
+      ctx.fillStyle = "#fffff0";
+      ctx.fillRect(17, -6, 3, 4);
+      ctx.fillRect(22, -6, 3, 3);
+      ctx.fillRect(19, -2, 3, 3);
+
+      if (isBlinking) {
+        ctx.strokeStyle = "#1c4a25";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(11, -12);
+        ctx.quadraticCurveTo(16, -10, 21, -12);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(16, -12, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#facc15";
+        ctx.beginPath();
+        ctx.arc(17, -12, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#000000";
+        ctx.beginPath();
+        ctx.arc(17.5, -12, 1.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = "#1e293b";
+      ctx.fillRect(9, -23, 17, 5);
+      ctx.fillStyle = "#38bdf8";
+      ctx.fillRect(12, -22, 5, 3);
+      ctx.fillRect(19, -22, 5, 3);
+
+      ctx.save();
+      ctx.fillStyle = "#48a85c";
+      if (isStanding) {
+        ctx.translate(6, 4);
+        ctx.rotate(handTwitchAngle);
+        ctx.beginPath();
+        ctx.roundRect(-2, 0, 7, 18, 3);
+        ctx.fill();
+        ctx.fillStyle = "#1c4a25";
+        ctx.fillRect(-2, 16, 6, 3);
+      } else {
+        ctx.translate(8, 4);
+        ctx.rotate(handTwitchAngle * 0.7);
+        ctx.beginPath();
+        ctx.roundRect(0, 0, 24, 6, 3);
+        ctx.fill();
+        ctx.fillStyle = "#1c4a25";
+        ctx.fillRect(23, 0, 3, 2);
+        ctx.fillRect(23, 4, 3, 2);
+      }
+      ctx.restore();
+
+      ctx.restore();
+
+      requestAnimationFrame(drawScene);
+    }
+
+    requestAnimationFrame(drawScene);
+
+    const countdownOverlay = document.getElementById("countdownOverlay");
+    const countdownNumEl = document.getElementById("countdownNum");
+    const countdownFill = document.getElementById("countdownBarFill");
+    const multiplierLabel = document.getElementById("multiplierLabel");
+
+    function startSevenSecondCountdown() {
+      gameState = STATES.COUNTDOWN;
+      countdownRemaining = 7;
+      multiplierLabel.classList.remove("crashed");
+      multiplierLabel.innerText = "x1.00";
+      countdownOverlay.classList.remove("hidden");
+
+      playerSlots.forEach(slot => {
+        slot.activeCurrentRound = false;
+        slot.claimed = false;
+        slot.claimMultiplier = 0;
+
+        if (slot.queuedNextRound) {
+          slot.activeCurrentRound = true;
+          slot.queuedNextRound = false;
+        } else if (slot.autoPilot) {
+          if (virtualBalance >= slot.points) {
+            deductRealBalance(slot.points);
+            slot.activeCurrentRound = true;
+          } else {
+            showToast("Balance too low for Autopilot!");
+          }
+        }
+        updateSlotUI(slot);
+      });
+
+      initRoundParticipants();
+      updateCountdownDisplay();
+
+      if (countdownTimer) clearInterval(countdownTimer);
+
+      countdownTimer = setInterval(() => {
+        countdownRemaining--;
+        sound.tick();
+        updateCountdownDisplay();
+
+        if (countdownRemaining <= 0) {
+          clearInterval(countdownTimer);
+          countdownNumEl.innerText = "GO!";
+          countdownNumEl.classList.add("pulse");
+          executeJumpAndFlight();
+        }
+      }, 1000);
+    }
+
+    function updateCountdownDisplay() {
+      countdownNumEl.innerText = countdownRemaining > 0 ? countdownRemaining : "GO!";
+      countdownNumEl.classList.remove("pulse");
+      void countdownNumEl.offsetWidth;
+      countdownNumEl.classList.add("pulse");
+
+      const fraction = (countdownRemaining / 7);
+      countdownFill.style.transform = `scaleX(${Math.max(0, fraction)})`;
+    }
+
+    function executeJumpAndFlight() {
+      gameState = STATES.JUMPING;
+      jumpStartTime = performance.now();
+      sound.jumpLaunch();
+
+      setTimeout(() => {
+        launchZombieFlight();
+      }, 420);
+    }
+
+    function launchZombieFlight() {
+      gameState = STATES.FLYING;
+      countdownOverlay.classList.add("hidden");
+      flightStartTime = performance.now();
+      currentMultiplier = 1.00;
+
+      const rand = Math.random();
+      if (rand < 0.35) crashPoint = 1.15 + Math.random() * 0.7;
+      else if (rand < 0.75) crashPoint = 1.85 + Math.random() * 2.2;
+      else if (rand < 0.93) crashPoint = 4.20 + Math.random() * 5.0;
+      else crashPoint = 9.5 + Math.random() * 20.0;
+
+      playerSlots.forEach(slot => updateSlotUI(slot));
+      flightLoop();
+    }
+
+    function flightLoop() {
+      if (gameState !== STATES.FLYING) return;
+
+      const elapsedSec = (performance.now() - flightStartTime) / 1000;
+      currentMultiplier = 1.00 + (elapsedSec * 0.08) + Math.pow(elapsedSec * 0.16, 2.05);
+
+      playerSlots.forEach(slot => {
+        if (slot.activeCurrentRound && !slot.claimed && slot.autoClaim && currentMultiplier >= slot.targetMultiplier) {
+          claimSlotReward(slot, slot.targetMultiplier);
+        }
+      });
+
+      currentRoundParticipants.forEach(p => {
+        if (!p.isPlayer && !p.claimed && currentMultiplier >= p.target) {
+          p.claimed = true;
+          p.cashAt = currentMultiplier;
+        }
+      });
+
+      sortAndRenderLiveTable();
+
+      if (currentMultiplier >= crashPoint) {
+        triggerCrash(crashPoint);
+      } else {
+        multiplierLabel.innerText = "x" + currentMultiplier.toFixed(2);
+        playerSlots.forEach(slot => {
+          if (slot.activeCurrentRound && !slot.claimed) updateSlotUI(slot);
+        });
+        requestAnimationFrame(flightLoop);
+      }
+    }
+
+    function triggerCrash(finalScore) {
+      gameState = STATES.CRASHED;
+      sound.crash();
+      currentMultiplier = finalScore;
+      multiplierLabel.innerText = "x" + finalScore.toFixed(2);
+      multiplierLabel.classList.add("crashed");
+
+      playerSlots.forEach(slot => {
+        if (slot.activeCurrentRound && !slot.claimed) {
+          slot.activeCurrentRound = false;
+          recordRun(slot.points, 0, finalScore, false);
+          updateSlotUI(slot);
+        }
+      });
+
+      addHistoryPill(finalScore);
+      sortAndRenderLiveTable();
+
+      setTimeout(() => {
+        startSevenSecondCountdown();
+      }, 2900);
+    }
+
+    function claimSlotReward(slot, multiplierAchieved) {
+      if (!slot.activeCurrentRound || slot.claimed) return;
+      slot.claimed = true;
+      slot.claimMultiplier = multiplierAchieved;
+      const reward = parseFloat((slot.points * multiplierAchieved).toFixed(2));
+      
+      // ব্যালেন্স যোগ (FD44 ও Zombie Crash একসাথে সিঙ্ক হবে)
+      addRealBalance(reward);
+      
+      sound.claim();
+      recordRun(slot.points, reward, multiplierAchieved, true);
+
+      const pEntry = currentRoundParticipants.find(p => p.slotId === slot.id);
+      if (pEntry) {
+        pEntry.claimed = true;
+        pEntry.cashAt = multiplierAchieved;
+      }
+      sortAndRenderLiveTable();
+      updateSlotUI(slot);
+    }
+
+    function addHistoryPill(val) {
+      const pill = document.createElement("span");
+      pill.className = "history-pill";
+      if (val < 1.8) pill.classList.add("pill-blue");
+      else if (val < 3.0) pill.classList.add("pill-cyan");
+      else if (val < 6.0) pill.classList.add("pill-purple");
+      else pill.classList.add("pill-gold");
+
+      pill.innerText = "x" + val.toFixed(2);
+      const ribbon = document.getElementById("historyRibbon");
+      ribbon.insertBefore(pill, ribbon.firstChild);
+      if (ribbon.children.length > 18) ribbon.removeChild(ribbon.lastChild);
+    }
+
+    function initRoundParticipants() {
+      currentRoundParticipants = mockNames.map(name => {
+        return {
+          name: name,
+          avatar: name[0].toUpperCase(),
+          points: [15, 40, 100, 250, 500, 1200][Math.floor(Math.random() * 6)],
+          target: 1.18 + Math.random() * 4.8,
+          claimed: false,
+          cashAt: 0,
+          isPlayer: false
+        };
+      });
+
+      updateParticipantsList();
+    }
+
+    function updateParticipantsList() {
+      currentRoundParticipants = currentRoundParticipants.filter(p => !p.isPlayer);
+
+      playerSlots.forEach(slot => {
+        if (slot.activeCurrentRound) {
+          currentRoundParticipants.push({
+            name: "YOU (Slot " + slot.id + ")",
+            avatar: "★",
+            points: slot.points,
+            target: slot.targetMultiplier,
+            claimed: slot.claimed,
+            cashAt: slot.claimMultiplier || 0,
+            isPlayer: true,
+            slotId: slot.id
+          });
+        }
+      });
+
+      sortAndRenderLiveTable();
+    }
+
+    function sortAndRenderLiveTable() {
+      currentRoundParticipants.sort((a, b) => b.points - a.points);
+      renderTabs();
+    }
+
+    const balanceDisplay = document.getElementById("virtualBalanceDisplay");
+    function updateBalanceUI() {
+      balanceDisplay.innerText = virtualBalance.toFixed(2) + " ৳";
+    }
+
+    function setupSlotPanel(index) {
+      const slot = playerSlots[index];
+      const pNum = index + 1;
+
+      const minusBtn = document.getElementById(`p${pNum}StepMinus`);
+      const plusBtn = document.getElementById(`p${pNum}StepPlus`);
+      const valInput = document.getElementById(`p${pNum}PointsVal`);
+      const actionBtn = document.getElementById(`p${pNum}ActionBtn`);
+      const autoModeCheck = document.getElementById(`autoModeCheck${pNum}`);
+      const autoClaimCheck = document.getElementById(`autoClaimCheck${pNum}`);
+      const targetScorePill = document.getElementById(`targetScoreDisplay${pNum}`);
+      const deckPanel = document.getElementById(`deckPanel${pNum}`);
+
+      function setVal(n) {
+        slot.points = Math.max(5, Math.min(99999, parseInt(n) || 5));
+        valInput.value = slot.points;
+      }
+
+      valInput.addEventListener("input", (e) => {
+        let parsed = parseInt(e.target.value);
+        if (isNaN(parsed)) parsed = 5;
+        if (parsed > 99999) parsed = 99999;
+        slot.points = parsed;
+      });
+
+      valInput.addEventListener("blur", (e) => {
+        setVal(e.target.value);
+      });
+
+      minusBtn.onclick = () => {
+        setVal(slot.points > 100 ? slot.points - 50 : slot.points - 5);
+        sound.beep(420, 0.04);
+      };
+
+      plusBtn.onclick = () => {
+        setVal(slot.points >= 100 ? slot.points + 50 : slot.points + 5);
+        sound.beep(560, 0.04);
+      };
+
+      deckPanel.querySelectorAll(".quick-pill").forEach(pill => {
+        pill.onclick = () => {
+          setVal(parseInt(pill.dataset.val));
+          sound.beep(650, 0.04);
+        };
+      });
+
+      autoModeCheck.onchange = (e) => {
+        slot.autoPilot = e.target.checked;
+        if (slot.autoPilot) {
+          showToast("Autopilot Enabled");
+        }
+      };
+
+      autoClaimCheck.onchange = (e) => {
+        slot.autoClaim = e.target.checked;
+      };
+
+      targetScorePill.onclick = () => {
+        const targets = [1.50, 2.00, 2.80, 3.50, 5.00, 10.00];
+        let idx = targets.indexOf(slot.targetMultiplier);
+        slot.targetMultiplier = targets[(idx + 1) % targets.length];
+        targetScorePill.innerText = "x" + slot.targetMultiplier.toFixed(2);
+        sound.beep(850, 0.06);
+      };
+
+      actionBtn.onclick = () => {
+        sound.init();
+        setVal(valInput.value);
+
+        if (gameState === STATES.COUNTDOWN) {
+          if (slot.activeCurrentRound) {
+            slot.activeCurrentRound = false;
+            // রিফান্ড
+            addRealBalance(slot.points);
+          } else {
+            if (virtualBalance >= slot.points) {
+              // বেট কাটা
+              deductRealBalance(slot.points);
+              slot.activeCurrentRound = true;
+            } else {
+              showToast("Insufficient Balance!");
+              return;
+            }
+          }
+          updateParticipantsList();
+        } 
+        else if (gameState === STATES.FLYING || gameState === STATES.JUMPING) {
+          if (slot.activeCurrentRound && !slot.claimed) {
+            claimSlotReward(slot, currentMultiplier);
+          } else if (slot.queuedNextRound) {
+            slot.queuedNextRound = false;
+            // রিফান্ড
+            addRealBalance(slot.points);
+          } else {
+            if (virtualBalance >= slot.points) {
+              // পরবর্তী রাউন্ডের জন্য বেট কাটা
+              deductRealBalance(slot.points);
+              slot.queuedNextRound = true;
+            } else {
+              showToast("Insufficient Balance!");
+              return;
+            }
+          }
+        }
+
+        updateSlotUI(slot);
+      };
+    }
+
+    function updateSlotUI(slot) {
+      const pNum = slot.id;
+      const actionBtn = document.getElementById(`p${pNum}ActionBtn`);
+      const actionText = document.getElementById(`p${pNum}ActionText`);
+      const actionSub = document.getElementById(`p${pNum}ActionSub`);
+
+      actionBtn.className = "action-btn-main";
+
+      if (gameState === STATES.FLYING || gameState === STATES.JUMPING) {
+        if (slot.activeCurrentRound && !slot.claimed) {
+          actionBtn.classList.add("claiming");
+          const liveVal = Math.floor(slot.points * currentMultiplier);
+          actionText.innerText = "CLAIM";
+          actionSub.innerText = `${liveVal} ৳`;
+        } else if (slot.claimed) {
+          actionText.innerText = "CLAIMED";
+          actionSub.innerText = `x${slot.claimMultiplier.toFixed(2)}`;
+        } else if (slot.queuedNextRound) {
+          actionBtn.classList.add("cancel");
+          actionText.innerText = "WAITING";
+          actionSub.innerText = "Next Round (Cancel)";
+        } else {
+          actionText.innerText = "START";
+          actionSub.innerText = "Next Round";
+        }
+      } else {
+        if (slot.activeCurrentRound) {
+          actionBtn.classList.add("cancel");
+          actionText.innerText = "READY";
+          actionSub.innerText = "Cancel Bet";
+        } else {
+          actionText.innerText = "START";
+          actionSub.innerText = "Bet on this round";
+        }
+      }
+    }
+
+    setupSlotPanel(0);
+    setupSlotPanel(1);
+
+    const deckPanel2 = document.getElementById("deckPanel2");
+    const togglePanelBtn = document.getElementById("toggleSecondPanelBtn");
+    const togglePanelText = document.getElementById("togglePanelText");
+    let panel2Open = false;
+
+    togglePanelBtn.onclick = () => {
+      panel2Open = !panel2Open;
+      deckPanel2.style.display = panel2Open ? "block" : "none";
+      togglePanelText.innerText = panel2Open ? "Close Secondary Flight Slot" : "Add Secondary Flight Slot";
+      sound.beep(600, 0.05);
+    };
+
+    document.getElementById("audioToggleBtn").onclick = () => {
+      const isMuted = sound.toggle();
+      document.getElementById("audioToggleBtn").style.opacity = isMuted ? "0.4" : "1";
+    };
+
+    document.getElementById("infoToggleBtn").onclick = () => {
+      alert("RULES:\n• Manually place your bet during the 7s countdown.\n• Highest bets always top the Current Round list (#1).\n• Min Bet: 5 ৳ | Max Bet: 99,999 ৳.\n• 100% Synced with your FD44 platform balance.");
+    };
+
+    let currentTab = "tab-current";
+    const tabContentArea = document.getElementById("tabContentArea");
+
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentTab = btn.dataset.tab;
+        renderTabs();
+        sound.beep(750, 0.04);
+      };
+    });
+
+    function recordRun(pts, earned, mult, won) {
+      myRunsLog.unshift({
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        points: pts,
+        earned: earned,
+        multiplier: mult.toFixed(2),
+        won: won
+      });
+      if (myRunsLog.length > 25) myRunsLog.pop();
+    }
+
+    function renderTabs() {
+      if (currentTab === "tab-current") renderLiveTab();
+      if (currentTab === "tab-myruns") renderMyRunsTab();
+      if (currentTab === "tab-leaders") renderLeaderboardTab();
+    }
+
+    function renderLiveTab() {
+      let html = "";
+      currentRoundParticipants.forEach((p, idx) => {
+        const isCrashed = (gameState === STATES.CRASHED && !p.claimed);
+        html += `
+          <div class="live-list-item ${p.isPlayer ? 'player-highlight' : ''}">
+            <div class="live-user">
+              <span class="rank-pill">#${idx + 1}</span>
+              <span class="user-avatar" style="${p.isPlayer ? 'background:#00e5ff;color:#040e24;' : ''}">${p.avatar}</span>
+              <span style="${p.isPlayer ? 'color:#00f0ff;font-weight:800;' : ''}">${p.name}</span>
+            </div>
+            <div>${p.points} ৳</div>
+            <div class="live-score ${p.claimed ? "won" : (isCrashed ? "out" : "")}">
+              ${p.claimed ? "x" + p.cashAt.toFixed(2) : (isCrashed ? "Crashed" : "Flying...")}
+            </div>
+          </div>
+        `;
+      });
+      tabContentArea.innerHTML = html;
+    }
+
+    function renderMyRunsTab() {
+      if (myRunsLog.length === 0) {
+        tabContentArea.innerHTML = `<div style="text-align:center; color:#5b7ab0; padding:20px; font-size:12px;">No flights recorded yet.</div>`;
+        return;
+      }
+      let html = "";
+      myRunsLog.forEach(run => {
+        html += `
+          <div class="live-list-item">
+            <div style="color:#7899cd">${run.time}</div>
+            <div>${run.points} ৳</div>
+            <div class="live-score ${run.won ? "won" : "out"}">
+              ${run.won ? "+" + run.earned + " (x" + run.multiplier + ")" : "0.00 ৳"}
+            </div>
+          </div>
+        `;
+      });
+      tabContentArea.innerHTML = html;
+    }
+
+    function renderLeaderboardTab() {
+      const topHighscores = [
+        { rank: "1", name: "ApexZombie", score: "x42.80", pts: "185,000 ৳" },
+        { rank: "2", name: "CyberGhoul", score: "x28.40", pts: "94,200 ৳" },
+        { rank: "3", name: "NightStalker", score: "x19.10", pts: "62,500 ৳" },
+        { rank: "4", name: "NeonPhantom", score: "x14.65", pts: "38,000 ৳" },
+        { rank: "5", name: "SkyGlider", score: "x10.50", pts: "21,400 ৳" }
+      ];
+      let html = "";
+      topHighscores.forEach(item => {
+        html += `
+          <div class="live-list-item">
+            <div class="live-user">
+              <span class="rank-pill" style="color:#ffd644">#${item.rank}</span>
+              <span>${item.name}</span>
+            </div>
+            <div style="color:#00f0ff; font-weight:700;">${item.score}</div>
+            <div class="live-score won">${item.pts}</div>
+          </div>
+        `;
+      });
+      tabContentArea.innerHTML = html;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initUserDatabaseSync();
+      startSevenSecondCountdown();
+    });
+  </script>
+</body>
+</html>
